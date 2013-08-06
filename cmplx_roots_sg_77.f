@@ -1633,7 +1633,7 @@
 !-------------------------------------------------------------------!
 ! _16_                    CMPLX_NEWTON_SPEC_WRAPPER                 !
 !-------------------------------------------------------------------!
-      subroutine cmplx_newton__spec_wrapper 
+      subroutine cmplx_newton_spec_wrapper 
      *           (poly, degree, root, iter, success)
       implicit none
       integer degree
