@@ -104,16 +104,16 @@
       !          very rough idea where some of the roots can be. 
       !
       integer degree ! intent(in)
-      complex*16 poly(degree+1) ! intent(in), coeffs of the polynomial
-      complex*16 roots(degree) ! intent(inout)
+      double complex poly(degree+1) ! intent(in), coeffs of the polynomial
+      double complex roots(degree) ! intent(inout)
       logical polish_roots_after, use_roots_as_starting_points ! intent(in)
 
-      complex*16 poly2(degree+1)
-      complex*16 zero
+      double complex poly2(degree+1)
+      double complex zero
       parameter(zero=(0d0,0d0))
       integer i, n, iter
       logical success
-      complex*16 coef, prev
+      double complex coef, prev
 
 
       do i=1,degree+1
@@ -241,21 +241,24 @@
       !
       integer degree
       parameter(degree=5) ! specifying this speeds up optimization a little
-      complex*16 roots(degree)                     ! intent(inout) 
+      double complex roots(degree)                     ! intent(inout) 
       logical first_3_roots_order_changed          ! intent(out) 
-      complex*16 poly(degree+1)                    ! intent(in)
+      double complex poly(degree+1)                    ! intent(in)
       logical polish_only                          ! intent(in)
       !------------------------------------------------------------------
       !
-      complex*16  remainder, roots_robust(degree)
+      double complex  remainder, roots_robust(degree)
       double precision d2min
       integer iter, m, root4, root5, kk, go_to_robust, i, i2, loops
-      complex*16 poly2(degree+1)
+      double complex poly2(degree+1)
       !integer sorted_ind(degree)
-      complex*16 zero
+      double complex zero
       parameter(zero=(0d0,0d0))
       logical succ
 
+      do kk=1,degree
+        roots_robust(kk) = roots(kk)
+      enddo
 
       !---------------------------------------
       go_to_robust=0
@@ -406,10 +409,10 @@
       implicit none
       integer n
       parameter(n=5) !  works for different n as well, but is faster for n as constant (optimization)
-      complex*16 points(n) ! intent(inout)
+      double complex points(n) ! intent(inout)
 
       integer sorted_points(n)
-      complex*16 savepoints(n)
+      double complex savepoints(n)
       integer i
 
       call sort_5_points_by_separation_i(sorted_points, points) 
@@ -438,13 +441,13 @@
       integer n
       parameter(n=5) !  works for different n as well, but is faster for n as constant (optimization)
       integer sorted_points(n)      ! intent(out)
-      complex*16 points(n)          ! intent(in)
+      double complex points(n)          ! intent(in)
        
       double precision dmin, d1, d2, d
       double precision distances2(n,n) 
       integer ki, kj, ind2, put
       double precision neigh1st(n), neigh2nd(n)
-      complex*16 p
+      double complex p
 
       do kj=1, n
         distances2(kj,kj)=1d100
@@ -454,7 +457,7 @@
       do kj=1, n               
         do ki=1, kj-1    
           p=points(ki)-points(kj)
-          d=conjg(p)*p
+          d=dble(conjg(p)*p)
           distances2(ki,kj)=d
           distances2(kj,ki)=d
         enddo
@@ -520,18 +523,18 @@
       integer n
       parameter(n=5) ! will work for other n too, but it is faster with n as constant
       integer i1,i2        ! intent(out) 
-      complex*16 points(n) ! intent(in) 
+      double complex points(n) ! intent(in) 
       double precision d2min         ! intent(out)
        
       double precision d2min1, d2
       integer i,j
-      complex*16 p
+      double complex p
 
       d2min1=1d100
       do j=1,n
         do i=1,j-1
           p=points(i)-points(j)
-          d2=conjg(p)*p
+          d2=dble(conjg(p)*p)
           if(d2.le.d2min1)then
             i1=i
             i2=j
@@ -584,22 +587,22 @@
 
       ! subroutine parameters
       integer degree
-      complex*16 poly(degree+1) ! intent(in)
+      double complex poly(degree+1) ! intent(in)
       integer iter              ! intent(out)
-      complex*16 root           ! intent(inout)
+      double complex root           ! intent(inout)
       logical success           ! intent(out)
 
 
-      complex*16 p         ! value of polynomial
-      complex*16 dp        ! value of 1st derivative
-      complex*16 d2p_half  ! value of 2nd derivative 
+      double complex p         ! value of polynomial
+      double complex dp        ! value of 1st derivative
+      double complex d2p_half  ! value of 2nd derivative 
       integer i, k
       logical  good_to_go
-      complex*16 denom, denom_sqrt, dx, newroot 
+      double complex denom, denom_sqrt, dx, newroot 
       double precision ek, absroot, abs2p
-      complex*16 fac_netwon, fac_extra, F_half, c_one_nth
+      double complex fac_netwon, fac_extra, F_half, c_one_nth
       double precision one_nth, n_1_nth, two_n_div_n_1
-      complex*16 zero, c_one
+      double complex zero, c_one
       parameter(zero=(0d0,0d0),c_one=(1d0,0d0))
       double precision stopping_crit2
 
@@ -667,7 +670,7 @@
         enddo
         iter=iter+1
         
-        abs2p=conjg(p)*p
+        abs2p=dble(conjg(p)*p)
         if(abs2p.eq.0d0) return
         stopping_crit2=(FRAC_ERR*ek)**2
         if(abs2p.lt.stopping_crit2) then ! (simplified a little Eq. 10 of Adams 1967) 
@@ -682,25 +685,27 @@
         endif
       
         faq=1d0
-      
-        fac_netwon=p/dp
-        fac_extra=d2p_half/dp
-        F_half=fac_netwon*fac_extra
-        
-        denom_sqrt=sqrt(c_one-two_n_div_n_1*F_half)
+        denom=zero 
+        if(dp.ne.zero)then
+          fac_netwon=p/dp
+          fac_extra=d2p_half/dp
+          F_half=fac_netwon*fac_extra
+          
+          denom_sqrt=sqrt(c_one-two_n_div_n_1*F_half)
 
-        !G=dp/p  ! gradient of ln(p)
-        !G2=G*G
-        !H=G2-2d0*d2p_half/p  ! second derivative of ln(p)
-        !denom_sqrt=sqrt( (degree-1)*(degree*H-G2) )
+          !G=dp/p  ! gradient of ln(p)
+          !G2=G*G
+          !H=G2-2d0*d2p_half/p  ! second derivative of ln(p)
+          !denom_sqrt=sqrt( (degree-1)*(degree*H-G2) )
 
-        ! NEXT LINE PROBABLY CAN BE COMMENTED OUT 
-        if(dble(denom_sqrt).ge.0d0)then ! use realpart or dble in g77 or ifort
-          ! real part of a square root is positive for probably all compilers. You can 
-          ! test this on your compiler and if so, you can omit this check
-          denom=c_one_nth+n_1_nth*denom_sqrt
-        else
-          denom=c_one_nth-n_1_nth*denom_sqrt
+          ! NEXT LINE PROBABLY CAN BE COMMENTED OUT 
+          if(dble(denom_sqrt).ge.0d0)then ! use realpart(), dble() or dreal() in g77 or ifort77
+            ! real part of a square root is positive for probably all compilers. You can 
+            ! test this on your compiler and if so, you can omit this check
+            denom=c_one_nth+n_1_nth*denom_sqrt
+          else
+            denom=c_one_nth-n_1_nth*denom_sqrt
+          endif
         endif
         if(denom.eq.zero)then !test if demoninators are > 0.0 not to divide by zero
           dx=(absroot+1d0)*exp(dcmplx(0d0,
@@ -734,8 +739,8 @@
 !-------------------------------------------------------------------!
       subroutine cmplx_newton_spec(poly, degree, root, iter, success)
       implicit none
-      ! Subroutine finds one root of a complex polynomial using
-      ! Newton's method. It calculates simplified Adams' stopping
+      ! Subroutine finds one root of a complex polynomial using 
+      ! Newton's method. It calculates simplified Adams' stopping 
       ! criterion for the value of the polynomial once per 10 iterations,
       ! after initial iteration. This is done to speed up calculations
       ! when polishing roots that are known preety well, and stopping
@@ -743,12 +748,12 @@
       !
       ! Uses 'root' value as a starting point (!!!!!)
       ! Remember to initialize 'root' to some initial guess.
-      ! Do not initilize 'root' to point (0,0) if the polynomial
-      ! coefficients are strictly real, because it will make going
+      ! Do not initilize 'root' to point (0,0) if the polynomial 
+      ! coefficients are strictly real, because it will make going 
       ! to imaginary roots impossible.
       !
       ! poly - is an array of polynomial cooefs
-      !        length = degree+1, poly(1) is constant
+      !        length = degree+1, poly(1) is constant 
       !               1              2             3
       !          poly(1) x^0 + poly(2) x^1 + poly(3) x^2 + ...
       ! degree - a degree of the polynomial
@@ -758,7 +763,7 @@
       !        evaluations)
       ! success - is false if routine reaches maximum number of iterations
       !
-      ! For a summary of the method go to:
+      ! For a summary of the method go to: 
       ! http://en.wikipedia.org/wiki/Newton's_method
       !
       integer MAX_ITERS, FRAC_JUMP_EVERY, FRAC_JUMP_LEN
@@ -774,33 +779,31 @@
 
       ! subroutine parameters
       integer degree
-      complex*16 poly(degree+1) ! intent(in)
+      double complex poly(degree+1) ! intent(in)
       integer iter              ! intent(out)
-      complex*16 root           ! intent(inout)
+      double complex root           ! intent(inout)
       logical success           ! intent(out)
 
 
-      complex*16 p    ! value of polynomial
-      complex*16 dp   ! value of 1st derivative
+      double complex p    ! value of polynomial
+      double complex dp   ! value of 1st derivative 
       integer i, k
       logical  good_to_go
-      complex*16 dx, newroot
+      double complex dx, newroot
       double precision ek, absroot, abs2p
-      complex*16 zero
+      double complex zero
       parameter(zero=(0d0,0d0))
       double precision stopping_crit2
 
       !---------------------------------------
-      data FRAC_JUMPS /0.64109297d0, 0.91577881d0, 0.25921289d0,
-     *                 0.50487203d0, 0.08177045d0, 0.13653241d0,
-     *                 0.306162d0  , 0.37794326d0, 0.04618805d0,
+      data FRAC_JUMPS /0.64109297d0, 0.91577881d0, 0.25921289d0,  
+     *                 0.50487203d0, 0.08177045d0, 0.13653241d0,  
+     *                 0.306162d0  , 0.37794326d0, 0.04618805d0,  
      *                 0.75132137d0/     ! some random numbers
 
 
       iter=0
       success=.true.
-      ! Initialize stopping_crit2 in order to silence the compiler.
-      stopping_crit2=1d-30
 
       ! next if-endif block is an EXTREME failsafe, not usually needed, and thus turned off in this version.
       if(.false.)then ! change false-->true if you would like to use caution about having first coefficient == 0
@@ -827,9 +830,10 @@
         endif
       endif
       ! end EXTREME failsafe
-
+ 
       good_to_go=.false.
 
+      stopping_crit2 = 0d0  ! value not important, will be initialized anyway on the first loop (because mod(1,10)==1)
       do i=1,MAX_ITERS
         faq=1d0
 
@@ -859,8 +863,8 @@
         endif
         iter=iter+1
 
-
-        abs2p=conjg(p)*p
+        
+        abs2p=dble(conjg(p)*p)
         if(abs2p.eq.0d0) return
 
         if(abs2p.lt.stopping_crit2) then ! (simplified a little Eq. 10 of Adams 1967)
@@ -884,7 +888,7 @@
           dx=p/dp  ! Newton method, see http://en.wikipedia.org/wiki/Newton's_method
         endif
 
-
+      
 
         newroot=root-dx
         if(newroot.eq.root) return ! nothing changes -> return
@@ -901,7 +905,7 @@
       enddo
       success=.false.
       return
-      ! too many iterations here
+      ! too many iterations here  
       end
 
 !-------------------------------------------------------------------!
@@ -910,31 +914,31 @@
       subroutine cmplx_laguerre2newton
      *           (poly, degree, root, iter, success, starting_mode)
       implicit none
-      ! Subroutine finds one root of a complex polynomial using
+      ! Subroutine finds one root of a complex polynomial using 
       ! Laguerre's method, Second-order General method and Newton's
-      ! method - depending on the value of function F, which is a
+      ! method - depending on the value of function F, which is a 
       ! combination of second derivative, first derivative and
       ! value of polynomial [F=-(p"*p)/(p'p')].
-      !
+      ! 
       ! Subroutine has 3 modes of operation. It starts with mode=2
-      ! which is the Laguerre's method, and continues until F
-      ! becames F<0.50, at which point, it switches to mode=1,
+      ! which is the Laguerre's method, and continues until F 
+      ! becames F<0.50, at which point, it switches to mode=1, 
       ! i.e., SG method (see paper). While in the first two
       ! modes, routine calculates stopping criterion once per every
-      ! iteration. Switch to the last mode, Newton's method, (mode=0)
+      ! iteration. Switch to the last mode, Newton's method, (mode=0) 
       ! happens when becomes F<0.05. In this mode, routine calculates
-      ! stopping criterion only once, at the beginning, under an
+      ! stopping criterion only once, at the beginning, under an 
       ! assumption that we are already very close to the root.
-      ! If there are more than 10 iterations in Newton's mode,
+      ! If there are more than 10 iterations in Newton's mode, 
       ! it means that in fact we were far from the root, and
       ! routine goes back to Laguerre's method (mode=2).
       !
       ! Uses 'root' value as a starting point (!!!!!)
-      ! Remember to initialize 'root' to some initial guess or to
+      ! Remember to initialize 'root' to some initial guess or to 
       ! point (0,0) if you have no prior knowledge.
       !
       ! poly - is an array of polynomial cooefs
-      !        length = degree+1, poly(1) is constant
+      !        length = degree+1, poly(1) is constant 
       !               1              2             3
       !          poly(1) x^0 + poly(2) x^1 + poly(3) x^2 + ...
       ! degree - a degree of the polynomial
@@ -943,12 +947,12 @@
       ! iter - number of iterations performed (the number of polynomial
       !        evaluations and stopping criterion evaluation)
       ! success - is false if routine reaches maximum number of iterations
-      ! starting_mode - this should be by default = 2. However if you
-      !                 choose to start with SG method put 1 instead.
-      !                 Zero will cause the routine to
-      !                 start with Newton for first 10 iterations, and
+      ! starting_mode - this should be by default = 2. However if you  
+      !                 choose to start with SG method put 1 instead. 
+      !                 Zero will cause the routine to 
+      !                 start with Newton for first 10 iterations, and 
       !                 then go back to mode 2.
-      !
+      !                 
       !
       ! For a summary of the method see the paper: Skowron & Gould (2012)
       !
@@ -966,24 +970,24 @@
 
       ! subroutine parameters
       integer degree
-      complex*16 poly(degree+1) ! intent(in)
+      double complex poly(degree+1) ! intent(in)
       integer iter              ! intent(out)
-      complex*16 root           ! intent(inout)
+      double complex root           ! intent(inout)
       logical success           ! intent(out)
       integer starting_mode     ! intent(in)
 
 
-      complex*16 p         ! value of polynomial
-      complex*16 dp        ! value of 1st derivative
-      complex*16 d2p_half  ! value of 2nd derivative
+      double complex p         ! value of polynomial
+      double complex dp        ! value of 1st derivative
+      double complex d2p_half  ! value of 2nd derivative 
       integer i, j, k
       logical  good_to_go
-      complex*16 denom, denom_sqrt, dx, newroot
+      double complex denom, denom_sqrt, dx, newroot
       double precision ek, absroot, abs2p, abs2_F_half
-      complex*16 fac_netwon, fac_extra, F_half, c_one_nth
+      double complex fac_netwon, fac_extra, F_half, c_one_nth
       double precision one_nth, n_1_nth, two_n_div_n_1
       integer mode
-      complex*16 zero, c_one
+      double complex zero, c_one
       parameter(zero=(0d0,0d0),c_one=(1d0,0d0))
       double precision stopping_crit2
 
@@ -993,11 +997,10 @@
      *                 0.306162d0  , 0.37794326d0, 0.04618805d0,
      *                 0.75132137d0/     ! some random numbers
 
-
+     
       iter=0
       success=.true.
-      ! Initialize stopping_crit2 in order to silence the compiler.
-      stopping_crit2=1d-30
+      stopping_crit2 = 0d0  ! value not important, will be initialized anyway on the first loop (because mod(1,10)==1)
 
       ! next if-endif block is an EXTREME failsafe, not usually needed, and thus turned off in this version.
       if(.false.)then ! change false-->true if you would like to use caution about having first coefficient == 0
@@ -1006,7 +1009,7 @@
           return
         endif
         if(poly(degree+1).eq.zero) then
-          if(degree.eq.0) return
+          if(degree.eq.0) return 
           call cmplx_laguerre2newton_wrapper
      *          (poly, degree-1, root, iter, success, starting_mode)
           return
@@ -1020,7 +1023,7 @@
           else
             root=-poly(1)/poly(2)
             return
-          endif
+          endif  
         endif
       endif
       ! end EXTREME failsafe
@@ -1038,7 +1041,7 @@
         n_1_nth=(degree-1d0)*one_nth
         two_n_div_n_1=2d0/n_1_nth
         c_one_nth=dcmplx(one_nth,0d0)
-
+      
         do i=1,MAX_ITERS  !
           faq=1d0
 
@@ -1059,12 +1062,12 @@
             ! Eq 8.
             ek=absroot*ek+abs(p)
           enddo
-          abs2p=conjg(p)*p !abs(p)
+          abs2p=dble(conjg(p)*p) !abs(p)
           iter=iter+1
           if(abs2p.eq.0d0) return
-
+          
           stopping_crit2=(FRAC_ERR*ek)**2
-          if(abs2p.lt.stopping_crit2) then ! (simplified a little Eq. 10 of Adams 1967)
+          if(abs2p.lt.stopping_crit2) then ! (simplified a little Eq. 10 of Adams 1967) 
             ! do additional iteration if we are less than 10x from stopping criterion
             if(abs2p.lt.0.01d0*stopping_crit2) then ! ten times better than stopping criterion
               return ! return immediately, because we are at very good place
@@ -1075,39 +1078,41 @@
             good_to_go=.false. ! reset if we are outside the zone of the root
           endif
 
+          denom=zero
+          if(dp.ne.zero)then 
+            fac_netwon=p/dp
+            fac_extra=d2p_half/dp
+            F_half=fac_netwon*fac_extra
 
-          fac_netwon=p/dp
-          fac_extra=d2p_half/dp
-          F_half=fac_netwon*fac_extra
+            abs2_F_half=dble(conjg(F_half)*F_half)
+            if(abs2_F_half.le.0.0625d0)then     ! F<0.50, F/2<0.25
+              ! go to SG method
+              if(abs2_F_half.le.0.000625d0)then ! F<0.05, F/2<0.025
+                mode=0 ! go to Newton's
+              else
+                mode=1 ! go to SG
+              endif
+            endif
+            
+            
+            denom_sqrt=sqrt(c_one-two_n_div_n_1*F_half)
 
-          abs2_F_half=conjg(F_half)*F_half
-          if(abs2_F_half.le.0.0625d0)then     ! F<0.50, F/2<0.25
-            ! go to SG method
-            if(abs2_F_half.le.0.000625d0)then ! F<0.05, F/2<0.025
-              mode=0 ! go to Newton's
+            ! NEXT LINE PROBABLY CAN BE COMMENTED OUT
+            if(dble(denom_sqrt).ge.0d0)then  ! use realpart(), dble() or dreal() for g77 or ifort77
+              ! real part of a square root is positive for probably all compilers. You can 
+              ! test this on your compiler and if so, you can omit this check
+              denom=c_one_nth+n_1_nth*denom_sqrt
             else
-              mode=1 ! go to SG
+              denom=c_one_nth-n_1_nth*denom_sqrt
             endif
           endif
-
-
-          denom_sqrt=sqrt(c_one-two_n_div_n_1*F_half)
-
-          ! NEXT LINE PROBABLY CAN BE COMMENTED OUT
-          if(dble(denom_sqrt).ge.0d0)then  ! use realpart or dble for g77 or ifort
-            ! real part of a square root is positive for probably all compilers. You can
-            ! test this on your compiler and if so, you can omit this check
-            denom=c_one_nth+n_1_nth*denom_sqrt
-          else
-            denom=c_one_nth-n_1_nth*denom_sqrt
-          endif
           if(denom.eq.zero)then !test if demoninators are > 0.0 not to divide by zero
-            dx=(abs(root)+1d0)*exp(
+            dx=(abs(root)+1d0)*exp( 
      *          dcmplx(0d0,FRAC_JUMPS(mod(i,FRAC_JUMP_LEN)+1)*2*pi)) ! make some random jump
           else
             dx=fac_netwon/denom
           endif
-
+     
           newroot=root-dx
           if(newroot.eq.root) return ! nothing changes -> return
           if(good_to_go)then         ! this was jump already after stopping criterion was met
@@ -1115,10 +1120,10 @@
             return
           endif
 
-          if(mode.ne.2) then
+          if(mode.ne.2) then 
             root=newroot
             j=i+1    ! remember iteration number
-            exit     ! go to Newton's or SG
+            exit     ! go to Newton's or SG 
           endif
 
           if(mod(i,FRAC_JUMP_EVERY).eq.0) then ! decide whether to do a jump of modified length (to break cycles)
@@ -1157,7 +1162,7 @@
               ! Adams, Duane A., 1967, "A stopping criterion for polynomial root finding",
               ! Communications of the ACM, Volume 10 Issue 10, Oct. 1967, p. 655
               ! ftp://reports.stanford.edu/pub/cstr/reports/cs/tr/67/55/CS-TR-67-55.pdf
-              ! Eq 8.
+              ! Eq 8.  
               ek=absroot*ek+abs(p)
             enddo
             stopping_crit2=(FRAC_ERR*ek)**2
@@ -1170,12 +1175,12 @@
           endif
 
 
-          abs2p=conjg(p)*p !abs(p)**2
+          abs2p=dble(conjg(p)*p) !abs(p)**2
           iter=iter+1
           if(abs2p.eq.0d0) return
 
 
-          if(abs2p.lt.stopping_crit2) then ! (simplified a little Eq. 10 of Adams 1967)
+          if(abs2p.lt.stopping_crit2) then ! (simplified a little Eq. 10 of Adams 1967) 
             if(dp.eq.zero) return
             ! do additional iteration if we are less than 10x from stopping criterion
             if(abs2p.le.0.01d0*stopping_crit2) then ! ten times better than stopping criterion
@@ -1186,7 +1191,7 @@
           else
             good_to_go=.false. ! reset if we are outside the zone of the root
           endif
-
+          
           if(dp.eq.zero)then !test if demoninators are > 0.0 not to divide by zero
             dx=(abs(root)+1d0)*exp(
      *          dcmplx(0d0,FRAC_JUMPS(mod(i,FRAC_JUMP_LEN)+1)*2*pi)) ! make some random jump
@@ -1195,14 +1200,14 @@
             fac_extra=d2p_half/dp
             F_half=fac_netwon*fac_extra
 
-            abs2_F_half=conjg(F_half)*F_half
+            abs2_F_half=dble(conjg(F_half)*F_half)
             if(abs2_F_half.le.0.000625d0)then ! F<0.05, F/2<0.025
               mode=0 ! set Newton's, go there after jump
             endif
-
+          
             dx=fac_netwon*(c_one+F_half)  ! SG
           endif
-
+          
           newroot=root-dx
           if(newroot.eq.root) return ! nothing changes -> return
           if(good_to_go)then         ! this was jump already after stopping criterion was met
@@ -1210,7 +1215,7 @@
             return
           endif
 
-          if(mode.ne.1) then
+          if(mode.ne.1) then 
             root=newroot
             j=i+1    ! remember iteration number
             exit     ! go to Newton's
@@ -1230,7 +1235,7 @@
           success=.false.
           return
         endif
-
+     
       endif ! if mode 1
 
 
@@ -1240,7 +1245,7 @@
         do i=j,j+10  ! do only 10 iterations the most, then go back to full Laguerre's
           faq=1d0
 
-
+          
           ! calculate value of polynomial and its first two derivatives
           p  =poly(degree+1)
           dp =zero
@@ -1254,7 +1259,7 @@
               ! Adams, Duane A., 1967, "A stopping criterion for polynomial root finding",
               ! Communications of the ACM, Volume 10 Issue 10, Oct. 1967, p. 655
               ! ftp://reports.stanford.edu/pub/cstr/reports/cs/tr/67/55/CS-TR-67-55.pdf
-              ! Eq 8.
+              ! Eq 8.  
               ek=absroot*ek+abs(p)
             enddo
             stopping_crit2=(FRAC_ERR*ek)**2
@@ -1264,13 +1269,13 @@
               p  =poly(k)+p*root    ! b_k
             enddo
           endif
-          abs2p=conjg(p)*p !abs(p)**2
+          abs2p=dble(conjg(p)*p) !abs(p)**2
           iter=iter+1
           if(abs2p.eq.0d0) return
 
 
           if(abs2p.lt.stopping_crit2) then ! (simplified a little Eq. 10 of Adams 1967)
-            if(dp.eq.zero) return
+            if(dp.eq.zero) return 
             ! do additional iteration if we are less than 10x from stopping criterion
             if(abs2p.lt.0.01d0*stopping_crit2) then ! ten times better than stopping criterion
               return ! return immediately, because we are at very good place
@@ -1280,17 +1285,17 @@
           else
             good_to_go=.false. ! reset if we are outside the zone of the root
           endif
-
+        
           if(dp.eq.zero)then ! test if demoninators are > 0.0 not to divide by zero
             dx=(abs(root)+1d0)*exp(
      *          dcmplx(0d0,FRAC_JUMPS(mod(i,FRAC_JUMP_LEN)+1)*2*pi)) ! make some random jump
           else
             dx=p/dp
           endif
-
+          
           newroot=root-dx
           if(newroot.eq.root) return ! nothing changes -> return
-          if(good_to_go)then
+          if(good_to_go)then         
             root=newroot
             return
           endif
@@ -1315,7 +1320,7 @@
 
       enddo ! end of infinite loop
 
-      !-------------------------------------------------------------
+      !------------------------------------------------------------- 
       success=.false.
       end
 
@@ -1326,16 +1331,16 @@
       subroutine solve_quadratic_eq(x0,x1,poly)
       ! Quadratic equation solver for complex polynomial (degree=2)
       implicit none
-      complex*16 x0,x1    ! intent(out)
-      complex*16 poly(*)  ! intent(in)  ! coeffs of the polynomial
+      double complex x0,x1    ! intent(out)
+      double complex poly(*)  ! intent(in)  ! coeffs of the polynomial
       ! poly - is an array of polynomial cooefs, length = degree+1, poly(1) is constant 
       !             1              2             3
       !        poly(1) x^0 + poly(2) x^1 + poly(3) x^2
-      complex*16 a, b, c, b2, delta
+      double complex a, b, c, b2, delta
 
-      complex*16  val, x
+      double complex  val, x
       integer  i
-      complex*16 zero
+      double complex zero
       parameter(zero=(0d0,0d0))
 
 
@@ -1347,7 +1352,7 @@
       b2=b*b
       delta=sqrt(b2-4d0*(a*c))
       if( dble(conjg(b)*delta).ge.0d0 )then  ! scallar product to decide the sign yielding bigger magnitude
-        ! use dble() or realpart() instead of real() not to loose precision in ifort or g77
+        ! use dble(), dreal() or realpart() instead of real() not to loose precision in ifort77 or g77
         x0=-0.5d0*(b+delta)
       else
         x0=-0.5d0*(b-delta)
@@ -1387,25 +1392,25 @@
       ! Cubic equation solver for complex polynomial (degree=3)
       ! http://en.wikipedia.org/wiki/Cubic_function   Lagrange's method
       implicit none
-      complex*16 x0, x1, x2   ! intent(out)
-      complex*16 poly(*)      ! intent(in)  ! coeffs of the polynomial
+      double complex x0, x1, x2   ! intent(out)
+      double complex poly(*)      ! intent(in)  ! coeffs of the polynomial
       ! poly - is an array of polynomial cooefs, length = degree+1, poly(1) is constant 
       !             1              2             3             4
       !        poly(1) x^0 + poly(2) x^1 + poly(3) x^2 + poly(4) x^3
-      complex*16 zeta, zeta2, zero
+      double complex zeta, zeta2, zero
       double precision third
       parameter(zero=(0d0,0d0))
       parameter(zeta =(-0.5d0, 0.8660254037844386d0))  ! sqrt3(1)
       parameter(zeta2=(-0.5d0,-0.8660254037844386d0))  ! sqrt3(1)**2
       parameter(third=0.3333333333333333d0)            ! 1/3
-      complex*16 s0, s1, s2
-      complex*16 E1 ! x0+x1+x2
-      complex*16 E2 ! x0x1+x1x2+x2x0
-      complex*16 E3 ! x0x1x2
-      complex*16 A, B, a_1, E12
-      complex*16 delta, A2
+      double complex s0, s1, s2
+      double complex E1 ! x0+x1+x2
+      double complex E2 ! x0x1+x1x2+x2x0
+      double complex E3 ! x0x1x2
+      double complex A, B, a_1, E12
+      double complex delta, A2
 
-      complex*16 val, x
+      double complex val, x
       integer  i
 
       a_1=poly(4)**(-1)
@@ -1421,7 +1426,7 @@
       A2=A*A
       delta=sqrt(A2-4d0*(B*B*B))
       if( dble(conjg(A)*delta).ge.0d0 )then  ! scallar product to decide the sign yielding bigger magnitude
-        ! use dble() or realpart() instead of real() not to loose precision in ifort or g77
+        ! use dble(), dreal() or realpart() instead of real() not to loose precision in ifort77 or g77
         s1=(0.5d0*(A+delta))**third
       else
         s1=(0.5d0*(A-delta))**third
@@ -1480,15 +1485,15 @@
       ! remember the proper degree of a polynomial.
       implicit none
       integer degree ! intent(in) 
-      complex*16 polyout(degree)  ! intent(out)
-      complex*16 remainder         ! intent(out)
-      complex*16 p                ! intent(in) 
-      complex*16 polyin(degree+1) ! intent(in)  ! coeffs of the polynomial
+      double complex polyout(degree)  ! intent(out)
+      double complex remainder         ! intent(out)
+      double complex p                ! intent(in) 
+      double complex polyin(degree+1) ! intent(in)  ! coeffs of the polynomial
       ! poly - is an array of polynomial cooefs, length = degree+1, poly(1) is constant 
       !             1              2             3
       !        poly(1) x^0 + poly(2) x^1 + poly(3) x^2 + ...
       integer i
-      complex*16 coef, prev
+      double complex coef, prev
 
       coef=polyin(degree+1)
       do i=1,degree
@@ -1506,21 +1511,21 @@
 !-------------------------------------------------------------------!
 ! _12_                    EVAL_POLY                                 !
 !-------------------------------------------------------------------!
-      complex*16 function eval_poly(x, poly, degree, errk)
+      double complex function eval_poly(x, poly, degree, errk)
       ! Evaluation of the complex polynomial 'poly' of a given degree 
       ! at the point 'x'. This routine calculates also the simplified
       ! Adams' (1967) stopping criterion. ('errk' should be multiplied 
-      ! by 2d-15 for double precisioni,double precision, arithmetic)
+      ! by 2d-15 for double precision, real*8, arithmetic)
       implicit none
-      complex*16 x              ! intent(in)
+      double complex x              ! intent(in)
       integer degree            ! intent(in)
       double precision errk               ! intent(out)
-      complex*16 poly(degree+1) ! intent(in)  ! coeffs of the polynomial
+      double complex poly(degree+1) ! intent(in)  ! coeffs of the polynomial
       ! poly - is an array of polynomial cooefs, length = degree+1, poly(1) is constant 
       !             1              2             3
       !        poly(1) x^0 + poly(2) x^1 + poly(3) x^2 + ...
       integer i
-      complex*16 val
+      double complex val
       double precision absx
 
       ! prepare stoping criterion
@@ -1553,9 +1558,9 @@
       ! routine will work fine.
       implicit none
       integer degree               ! intent(in) ! OLD degree, new will be +1
-      complex*16 polyout(degree+2) ! intent(out) 
-      complex*16 p                 ! intent(in) 
-      complex*16 polyin(degree+1)  ! intent(in) ! coeffs of the polynomial
+      double complex polyout(degree+2) ! intent(out) 
+      double complex p                 ! intent(in) 
+      double complex polyin(degree+1)  ! intent(in) ! coeffs of the polynomial
       ! poly - is an array of polynomial cooefs, length = degree+1, poly(1) is constant 
       !             1              2             3
       !        poly(1) x^0 + poly(2) x^1 + poly(3) x^2 + ...
@@ -1599,12 +1604,12 @@
       !
       implicit none
       integer degree            ! intent(in) 
-      complex*16 poly(degree+1) ! intent(out)
-      complex*16 a              ! intent(in) 
-      complex*16 roots(degree)  ! intent(in)
+      double complex poly(degree+1) ! intent(out)
+      double complex a              ! intent(in) 
+      double complex roots(degree)  ! intent(in)
       !
       integer i
-      complex*16 zero
+      double complex zero
       parameter(zero=(0d0,0d0))
       ! 
       do i=1,degree+1
@@ -1625,9 +1630,9 @@
       implicit none
       ! subroutine parameters
       integer degree
-      complex*16 poly(degree+1) ! intent(in)
+      double complex poly(degree+1) ! intent(in)
       integer iter              ! intent(out)
-      complex*16 root           ! intent(inout)
+      double complex root           ! intent(inout)
       logical success           ! intent(out)
 
       call cmplx_laguerre(poly, degree, root, iter, success)
@@ -1641,9 +1646,9 @@
      *           (poly, degree, root, iter, success)
       implicit none
       integer degree
-      complex*16 poly(degree+1) ! intent(in)
+      double complex poly(degree+1) ! intent(in)
       integer iter              ! intent(out)
-      complex*16 root           ! intent(inout)
+      double complex root           ! intent(inout)
       logical success           ! intent(out)
 
       call cmplx_newton_spec(poly, degree, root, iter, success)
@@ -1658,9 +1663,9 @@
       implicit none
       ! subroutine parameters
       integer degree
-      complex*16 poly(degree+1) ! intent(in)
+      double complex poly(degree+1) ! intent(in)
       integer iter              ! intent(out)
-      complex*16 root           ! intent(inout)
+      double complex root           ! intent(inout)
       logical success           ! intent(out)
       integer starting_mode     ! intent(in)
 

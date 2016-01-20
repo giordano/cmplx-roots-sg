@@ -243,7 +243,7 @@ subroutine cmplx_roots_5(roots, first_3_roots_order_changed, poly, polish_only)
 
 
   !---------------------------------------
-
+  roots_robust = roots
   
   go_to_robust=0
   if(.not.polish_only) then
@@ -428,7 +428,7 @@ subroutine sort_5_points_by_separation_i(sorted_points, points)
   do kj=1, n              
     do ki=1, kj-1    
       p=points(ki)-points(kj)
-      d=conjg(p)*p
+      d=real(conjg(p)*p)
       distances2(ki,kj)=d
       distances2(kj,ki)=d
     enddo
@@ -506,7 +506,7 @@ subroutine find_2_closest_from_5(i1,i2, d2min, points)
     !distances2(j,j)=0d0
     do i=1,j-1
       p=points(i)-points(j)
-      d2=conjg(p)*p
+      d2=real(conjg(p)*p)
       !distances2(i,j)=d2
       !distances2(j,i)=d2
       if(d2<=d2min1)then
@@ -640,7 +640,7 @@ recursive subroutine cmplx_laguerre(poly, degree, root, iter, success)
     enddo
     iter=iter+1
     
-    abs2p=conjg(p)*p
+    abs2p=real(conjg(p)*p)
     if(abs2p==0d0) return
     stopping_crit2=(FRAC_ERR*ek)**2
     if(abs2p<stopping_crit2) then ! (simplified a little Eq. 10 of Adams 1967) 
@@ -655,25 +655,27 @@ recursive subroutine cmplx_laguerre(poly, degree, root, iter, success)
     endif
   
     faq=1d0
-  
-    fac_netwon=p/dp
-    fac_extra=d2p_half/dp
-    F_half=fac_netwon*fac_extra
-    
-    denom_sqrt=sqrt(c_one-two_n_div_n_1*F_half)
+    denom=zero
+    if(dp/=zero)then
+      fac_netwon=p/dp
+      fac_extra=d2p_half/dp
+      F_half=fac_netwon*fac_extra
+      
+      denom_sqrt=sqrt(c_one-two_n_div_n_1*F_half)
 
-    !G=dp/p  ! gradient of ln(p)
-    !G2=G*G
-    !H=G2-2d0*d2p_half/p  ! second derivative of ln(p)
-    !denom_sqrt=sqrt( (degree-1)*(degree*H-G2) )
-  
-    ! NEXT LINE PROBABLY CAN BE COMMENTED OUT  
-    if(real(denom_sqrt)>=0d0)then
-      ! real part of a square root is positive for probably all compilers. You can 
-      ! test this on your compiler and if so, you can omit this check
-      denom=c_one_nth+n_1_nth*denom_sqrt
-    else
-      denom=c_one_nth-n_1_nth*denom_sqrt
+      !G=dp/p  ! gradient of ln(p)
+      !G2=G*G
+      !H=G2-2d0*d2p_half/p  ! second derivative of ln(p)
+      !denom_sqrt=sqrt( (degree-1)*(degree*H-G2) )
+    
+      ! NEXT LINE PROBABLY CAN BE COMMENTED OUT  
+      if(real(denom_sqrt)>=0d0)then
+        ! real part of a square root is positive for probably all compilers. You can 
+        ! test this on your compiler and if so, you can omit this check
+        denom=c_one_nth+n_1_nth*denom_sqrt
+      else
+        denom=c_one_nth-n_1_nth*denom_sqrt
+      endif
     endif
     if(denom==zero)then !test if demoninators are > 0.0 not to divide by zero
       dx=(absroot+1d0)*exp(cmplx(0d0,FRAC_JUMPS(mod(i,FRAC_JUMP_LEN)+1)*2*pi,RK)) ! make some random jump
@@ -793,6 +795,7 @@ recursive subroutine cmplx_newton_spec(poly, degree, root, iter, success)
 
   good_to_go=.false.
 
+  stopping_crit2 = 0d0  ! value not importat, will be initialized anyway on the first loop (because mod(1,10)==1)
   do i=1,MAX_ITERS
     faq=1d0
 
@@ -823,7 +826,7 @@ recursive subroutine cmplx_newton_spec(poly, degree, root, iter, success)
     iter=iter+1
 
     
-    abs2p=conjg(p)*p
+    abs2p=real(conjg(p)*p)
     if(abs2p==0d0) return
 
     if(abs2p<stopping_crit2) then ! (simplified a little Eq. 10 of Adams 1967)
@@ -953,6 +956,7 @@ recursive subroutine cmplx_laguerre2newton(poly, degree, root, iter, success, st
  
   iter=0
   success=.true.
+  stopping_crit2 = 0d0  !  value not importat, will be initialized anyway on the first loop (because mod(1,10)==1)
 
   ! next if-endif block is an EXTREME failsafe, not usually needed, and thus turned off in this version.
   if(.false.)then ! change false-->true if you would like to use caution about having first coefficient == 0
@@ -1012,7 +1016,7 @@ recursive subroutine cmplx_laguerre2newton(poly, degree, root, iter, success, st
         ! Eq 8.
         ek=absroot*ek+abs(p)
       enddo
-      abs2p=conjg(p)*p !abs(p)
+      abs2p=real(conjg(p)*p) !abs(p)
       iter=iter+1
       if(abs2p==0d0) return
       
@@ -1028,31 +1032,33 @@ recursive subroutine cmplx_laguerre2newton(poly, degree, root, iter, success, st
         good_to_go=.false. ! reset if we are outside the zone of the root
       endif
     
-    
-      fac_netwon=p/dp
-      fac_extra=d2p_half/dp
-      F_half=fac_netwon*fac_extra
+      denom=zero
+      if(dp/=zero)then 
+        fac_netwon=p/dp
+        fac_extra=d2p_half/dp
+        F_half=fac_netwon*fac_extra
 
-      abs2_F_half=conjg(F_half)*F_half
-      if(abs2_F_half<=0.0625d0)then     ! F<0.50, F/2<0.25
-        ! go to SG method
-        if(abs2_F_half<=0.000625d0)then ! F<0.05, F/2<0.025
-          mode=0 ! go to Newton's
-        else
-          mode=1 ! go to SG
+        abs2_F_half=real(conjg(F_half)*F_half)
+        if(abs2_F_half<=0.0625d0)then     ! F<0.50, F/2<0.25
+          ! go to SG method
+          if(abs2_F_half<=0.000625d0)then ! F<0.05, F/2<0.025
+            mode=0 ! go to Newton's
+          else
+            mode=1 ! go to SG
+          endif
         endif
-      endif
-      
-      
-      denom_sqrt=sqrt(c_one-two_n_div_n_1*F_half)
+        
+        
+        denom_sqrt=sqrt(c_one-two_n_div_n_1*F_half)
 
-      ! NEXT LINE PROBABLY CAN BE COMMENTED OUT 
-      if(real(denom_sqrt)>=0d0)then
-        ! real part of a square root is positive for probably all compilers. You can 
-        ! test this on your compiler and if so, you can omit this check
-        denom=c_one_nth+n_1_nth*denom_sqrt
-      else
-        denom=c_one_nth-n_1_nth*denom_sqrt
+        ! NEXT LINE PROBABLY CAN BE COMMENTED OUT 
+        if(real(denom_sqrt)>=0d0)then
+          ! real part of a square root is positive for probably all compilers. You can 
+          ! test this on your compiler and if so, you can omit this check
+          denom=c_one_nth+n_1_nth*denom_sqrt
+        else
+          denom=c_one_nth-n_1_nth*denom_sqrt
+        endif
       endif
       if(denom==zero)then !test if demoninators are > 0.0 not to divide by zero
         dx=(abs(root)+1d0)*exp(cmplx(0d0,FRAC_JUMPS(mod(i,FRAC_JUMP_LEN)+1)*2*pi,RK)) ! make some random jump
@@ -1122,7 +1128,7 @@ recursive subroutine cmplx_laguerre2newton(poly, degree, root, iter, success, st
       endif
 
 
-      abs2p=conjg(p)*p !abs(p)**2
+      abs2p=real(conjg(p)*p) !abs(p)**2
       iter=iter+1
       if(abs2p==0d0) return
 
@@ -1146,7 +1152,7 @@ recursive subroutine cmplx_laguerre2newton(poly, degree, root, iter, success, st
         fac_extra=d2p_half/dp
         F_half=fac_netwon*fac_extra
 
-        abs2_F_half=conjg(F_half)*F_half
+        abs2_F_half=real(conjg(F_half)*F_half)
         if(abs2_F_half<=0.000625d0)then ! F<0.05, F/2<0.025
           mode=0 ! set Newton's, go there after jump
         endif
@@ -1215,7 +1221,7 @@ recursive subroutine cmplx_laguerre2newton(poly, degree, root, iter, success, st
           p  =poly(k)+p*root    ! b_k
         enddo
       endif
-      abs2p=conjg(p)*p !abs(p)**2
+      abs2p=real(conjg(p)*p) !abs(p)**2
       iter=iter+1
       if(abs2p==0d0) return
 
@@ -1451,7 +1457,7 @@ complex(kind=8) function eval_poly(x, poly, degree, errk)
   ! Evaluation of the complex polynomial 'poly' of a given degree 
   ! at the point 'x'. This routine calculates also the simplified
   ! Adams' (1967) stopping criterion. ('errk' should be multiplied 
-  ! by 2d-15 for double precisioni,real*8, arithmetic)
+  ! by 2d-15 for double precision, real*8, arithmetic)
   implicit none
   complex(kind=8), intent(in) :: x
   integer, intent(in) :: degree
