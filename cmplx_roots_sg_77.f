@@ -129,7 +129,7 @@
 
       ! skip small degree polynomials from doing Laguerre's method
       if(degree.le.1)then
-        if(degree.eq.1) roots(1)=-poly(2)/poly(1)
+        if(degree.eq.1) roots(1)=-poly(1)/poly(2)
         return
       endif
 

@@ -121,7 +121,7 @@ subroutine cmplx_roots_gen(roots, poly, degree, polish_roots_after, use_roots_as
 
   ! skip small degree polynomials from doing Laguerre's method
   if(degree<=1)then
-    if(degree==1) roots(1)=-poly(2)/poly(1)
+    if(degree==1) roots(1)=-poly(1)/poly(2)
     return
   endif
 
