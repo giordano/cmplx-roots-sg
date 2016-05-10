@@ -14,12 +14,19 @@
 !
 !-------------------------------------------------------------------!
 !
-! The authors also release this file under the GNU Lesser General 
-! Public License version 2 or any later version, as well as under
-! a "customary scientific license", which implies 
+! The authors also make this file available under the terms of
+! GNU Lesser General Public License version 2 or any later version.
+! (text of the LGPL licence 2 in NOTICE file)
+!
+!-------------------------------------------------------------------!
+!
+! A custom in the scientific comunity is (regardless of the licence
+! you chose to use or distribute this software under)
 ! that if this code was important in the scientific process or
-! for the results of your scientific work, we ask for the 
-! appropriate citation of the Paper (Skowron & Gould 2012).
+! for the results of your scientific work, we kindly ask you for the
+! appropriate citation of the Paper (Skowron & Gould 2012), and
+! we would be greatful if you pass the information about
+! the proper citation to anyone whom you redistribute this software to.
 !
 !-------------------------------------------------------------------!
 !
@@ -47,6 +54,11 @@
 !     or http://arxiv.org/find/astro-ph
 !     or http://www.adsabs.harvard.edu/abstract_service.html
 ! see also file NOTICE and LICENSE
+!
+! ver. 2012.03.03 initial
+! ver. 2014.03.12 bug fix
+! ver. 2016.01.21 bug fix
+! ver. 2016.04.28 bug fix
 !
 !-------------------------------------------------------------------!
 ! _1_                    CMPLX_ROOTS_GEN                            !
