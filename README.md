@@ -7,7 +7,8 @@ Paper
 J. Skowron & A. Gould (2012)
 
 Full text: [ADS link](http://adsabs.harvard.edu/abs/2012arXiv1203.1034S) |
-[arxiv.org link](http://arxiv.org/abs/1203.1034)
+[arxiv.org link](http://arxiv.org/abs/1203.1034) |
+[Astrophysics Source Code Library](http://adsabs.harvard.edu/abs/2012ascl.soft12005S)
 
 Abstract
 --------
@@ -44,9 +45,18 @@ subroutine.  General ideas, limitations and comments are provided in the Paper.
 
 The authors release the source codes associated with the Paper under terms of
 the [GNU Lesser General Public License](http://www.gnu.org/licenses/lgpl.html)
-version 2 or any later version, or under the
-[Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) as
-well as under a "customary scientific license", which implies that if this code
-was important in the scientific process or for the results of your scientific
-work, we ask for the appropriate citation of the Paper
-([Skowron & Gould 2012](http://arxiv.org/abs/1203.1034)).
+version 3 or any later version, or under the
+[Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).  A
+custom in the scientific comunity is (regardless of the licence you chose to use
+or distribute this software under) that if this code was important in the
+scientific process or for the results of your scientific work, we kindly ask you
+for the appropriate citation of the Paper
+([Skowron & Gould 2012](http://arxiv.org/abs/1203.1034)), and we would be
+greatful if you pass the information about the proper citation to anyone whom
+you redistribute this software to.
+
+Other implementations
+---------------------
+
+* Implementation in Julia Language by Mosè Giordano:
+  [PolynomialRoots.jl](https://github.com/giordano/PolynomialRoots.jl)
